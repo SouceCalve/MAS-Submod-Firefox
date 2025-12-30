@@ -5,6 +5,6 @@
  1) Install this plugin from <link_placeholder>
  2) Copy Firefox_Submod in game/Submod
  
-## TODO:
- 1)Fix by adding a flags for events and moving reaction function to main thread
- 2)Upload and verify firefox plugin
+## TODO
+ 1) Fix by moving reaction selector to main thread
+ 2) Upload and verify firefox plugin
