@@ -26,8 +26,8 @@ init 0 python:
                 # Если домен есть в списке, ставим событие в очередь MAS
                 if domain in domain_to_event:
                     event_label = domain_to_event[domain]
-                    store.mas_submod_utils.queueEvent(event_label)
-                    # store.mas_submod_utils.submod_log.debug(f"Событие {event_label} поставлено в очередь MAS")
+                    MASEventList.queue(event_label)
+                    store.mas_submod_utils.submod_log.debug("Событие " +  str(event_label) + " поставлено в очередь MAS")
 
         except Queue.Empty:
             # Очередь пуста - ничего не делаем
@@ -50,7 +50,7 @@ init 6 python:
     import Queue
 
     PORT = 9163
-    domain_queue = Queue.Queue()
+
 
     class MyRequestHandler(SocketServer.BaseRequestHandler):
         def handle(self):
