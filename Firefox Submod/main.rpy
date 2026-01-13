@@ -1,11 +1,56 @@
+# Общие данные
+init -1 python:
+    import Queue
+    domain_queue = Queue.Queue()
+    domain_to_event = {
+        "github.com": "wrs_github",
+    }
+
+# Функции обработки
+init 0 python:
+    import store
+    @mas_submod_utils.functionplugin("ch30_loop")
+    def check_domain_queue():
+        """
+        Функция, вызываемая из главного потока (хука ch30_loop)
+        Проверяет очередь доменов и запускает соответствующие события
+        """
+        try:
+            # Безопасно проверяем очередь без блокировки
+            if not domain_queue.empty():
+                domain = domain_queue.get_nowait()
+
+                # Включаем логирование для отладки
+                # store.mas_submod_utils.submod_log.debug(f"Обрабатываем домен из очереди: {domain}")
+
+                # Если домен есть в списке, ставим событие в очередь MAS
+                if domain in domain_to_event:
+                    event_label = domain_to_event[domain]
+                    store.mas_submod_utils.queueEvent(event_label)
+                    # store.mas_submod_utils.submod_log.debug(f"Событие {event_label} поставлено в очередь MAS")
+
+        except Queue.Empty:
+            # Очередь пуста - ничего не делаем
+            pass
+        except Exception as e:
+            # Логируем ошибку, но не прерываем работу
+            store.mas_submod_utils.submod_log.error("Ошибка в check_domain_queue:" + str(e))
+
+
+
+
+
+
+
 init 6 python:
     import store
     import SocketServer
     import threading
     import json
+    import Queue
 
     PORT = 9163
-
+    domain_queue = Queue.Queue()
 
     class MyRequestHandler(SocketServer.BaseRequestHandler):
         def handle(self):
@@ -61,7 +106,7 @@ init 6 python:
 
                                     self.request.sendall(response)
                                     store.mas_submod_utils.submod_log.debug("Отправлен ответ с CORS заголовками\r\n")
-                                    process_domain(domain)
+                                    domain_queue.put(domain)
                                 except ValueError as e:
                                     store.mas_submod_utils.submod_log.error("Ошибка парсинга JSON: " + str(e) + "\r\n")
                                     self.request.sendall("HTTP/1.1 400 Bad Request\r\n\r\n")
@@ -108,28 +153,6 @@ init 6 python:
             store.mas_submod_utils.submod_log.error("Ошибка сервера: " + str(e) + "\r\n")
         finally:
             store.mas_submod_utils.submod_log.debug("Сервер остановлен\r\n")
-
-    def process_domain(domain):
-        """Обрабатывает полученный домен и запускает соответствующие ивенты"""
-        # Маппинг доменов на WRS ивенты
-        domain_to_event = {
-            "github.com": "mas_wrs_github",
-            "youtube.com": "mas_wrs_youtube",
-            "twitter.com": "mas_wrs_twitter",
-            "reddit.com": "mas_wrs_reddit",
-            "pinterest.com": "mas_wrs_pinterest",
-            # Добавьте другие домены
-        }
-
-        if domain in domain_to_event:
-            eventlabel = domain_to_event[domain]
-            # Проверяем, можно ли запустить ивент
-            ev = mas_getEV(eventlabel)
-            if ev and ev.checkConditional():
-                MASEventList.queue(eventlabel)
-                store.mas_submod_utils.submod_log.debug("Запущен ивент: " + str(eventlabel) + " для домена: " + str(domain) + "\r\n")
-                return True
-        return False
 
     # Создаем и запускаем поток с сервером
     server_thread = threading.Thread(target=start_server)
