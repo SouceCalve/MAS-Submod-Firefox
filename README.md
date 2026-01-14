@@ -6,5 +6,5 @@
  2) Copy Firefox_Submod in game/Submod
  
 ## TODO
- 1) Fix by moving reaction selector to main thread
- 2) Upload and verify firefox plugin
+- [x] Fix by moving reaction selector to main thread 
+- [ ] Upload and verify firefox plugin
