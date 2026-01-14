@@ -31,29 +31,29 @@ init 0 python:
     @mas_submod_utils.functionplugin("ch30_loop")
     def check_domain_queue():
         """
-        Функция, вызываемая из главного потока (хука ch30_loop)
-        Проверяет очередь доменов и запускает соответствующие события
+        Main processing function (hooked to ch30_loop)
+        Continuosly checking domains and add Events
         """
         try:
-            # Безопасно проверяем очередь без блокировки
+            # Securely checking queue without blocking
             if not domain_queue.empty():
                 domain = domain_queue.get_nowait()
 
-                # Включаем логирование для отладки
-                # store.mas_submod_utils.submod_log.debug(f"Обрабатываем домен из очереди: {domain}")
+                # Domain logging disabled right now, but you can still enable it to debug queue
+                # store.mas_submod_utils.submod_log.debug(f"Proccesing domain: {domain}")
 
-                # Если домен есть в списке, ставим событие в очередь MAS
+                # If domain found found on list, when add a Event to MAS queue
                 if domain in domain_to_event:
                     event_label = domain_to_event[domain]
                     MASEventList.queue(event_label)
-                    store.mas_submod_utils.submod_log.debug("Событие " +  str(event_label) + " поставлено в очередь MAS")
+                    store.mas_submod_utils.submod_log.debug("Event " +  str(event_label) + " appended in MAS queue")
 
         except Queue.Empty:
-            # Очередь пуста - ничего не делаем
+            # If our queue is empty - doing nothing
             pass
         except Exception as e:
-            # Логируем ошибку, но не прерываем работу
-            store.mas_submod_utils.submod_log.error("Ошибка в check_domain_queue:" + str(e))
+            # Logging error, but continue to work
+            store.mas_submod_utils.submod_log.error("Error in check_domain_queue:" + str(e))
 
 
 
@@ -74,43 +74,43 @@ init 6 python:
     class MyRequestHandler(SocketServer.BaseRequestHandler):
         def handle(self):
             try:
-                # Получаем данные
+                # Receiving a request
                 data = self.request.recv(4096)
 
-                # Логируем сырые данные
-                #store.mas_submod_utils.submod_log.debug("Получены сырые данные: " + repr(data) + "\r\n")
+                # Raw data logging disabled, but still can enable it if you want to debug Plugin-->Server exchange
+                #store.mas_submod_utils.submod_log.debug("Got a raw data: " + repr(data) + "\r\n")
 
-                # Парсим HTTP запрос
+                # Parsing a HTTP request
                 if data:
-                    # Преобразуем в строку для парсинга
+                    # Covertiong to a string
                     request_text = data
 
-                    # Логируем запрос
-                    #store.mas_submod_utils.submod_log.debug("Получен запрос:\n" + request_text + "\r\n")
+                    # Logging a string request
+                    #store.mas_submod_utils.submod_log.debug("Got request:\n" + request_text + "\r\n")
 
-                    # Парсим первую строку
+                    # Parsing a first string
                     lines = request_text.split('\r\n')
                     if lines:
                         first_line = lines[0]
-                        #store.mas_submod_utils.submod_log.debug("Первая строка запроса: " + first_line + "\r\n")
+                        #store.mas_submod_utils.submod_log.debug("First string of request: " + first_line + "\r\n")
 
-                        # Проверяем, что это POST запрос на /domain
+                        # Checking if it a POST request on /domain
                         if 'POST' in first_line and '/domain' in first_line:
-                            # Ищем тело запроса (после пустой строки)
+                            # Finding a body in request (after a clear string)
                             body_start = request_text.find('\r\n\r\n')
                             if body_start != -1:
                                 body = request_text[body_start + 4:]
-                                #store.mas_submod_utils.submod_log.debug("Тело запроса: " + body + "\r\n")
+                                #store.mas_submod_utils.submod_log.debug("Body of request: " + body + "\r\n")
 
                                 try:
-                                    # Парсим JSON
+                                    # Parsing JSON
                                     data_json = json.loads(body)
                                     domain = data_json.get('domain', '')
-                                    store.mas_submod_utils.submod_log.debug("Извлечен домен: " + domain + "\r\n")
+                                    store.mas_submod_utils.submod_log.debug("Extracted domain: " + domain + "\r\n")
                                     if not(store.persistent.domain_now == domain):
                                         store.persistent.domain_now = domain
 
-                                    # Формируем HTTP ответ с CORS заголовками
+                                    # Forming a HTTP answer with CORS headers
                                     response_data = json.dumps({"status": "ok", "domain": domain})
                                     response = (
                                         "HTTP/1.1 200 OK\r\n"
@@ -124,17 +124,17 @@ init 6 python:
                                     ).format(len(response_data), response_data)
 
                                     self.request.sendall(response)
-                                    store.mas_submod_utils.submod_log.debug("Отправлен ответ с CORS заголовками\r\n")
+                                    store.mas_submod_utils.submod_log.debug("CORS-compilent answer sended right away.\r\n")
                                     domain_queue.put(domain)
                                 except ValueError as e:
-                                    store.mas_submod_utils.submod_log.error("Ошибка парсинга JSON: " + str(e) + "\r\n")
+                                    store.mas_submod_utils.submod_log.error("Error parsing JSON structure: " + str(e) + "\r\n")
                                     self.request.sendall("HTTP/1.1 400 Bad Request\r\n\r\n")
                             else:
-                                store.mas_submod_utils.submod_log.error("Не найдено тело запроса\r\n")
+                                store.mas_submod_utils.submod_log.error("Body not found!\r\n")
                                 self.request.sendall("HTTP/1.1 400 Bad Request\r\n\r\n")
                         elif 'OPTIONS' in first_line and '/domain' in first_line:
-                            # Обрабатываем preflight OPTIONS запрос для CORS
-                            store.mas_submod_utils.submod_log.debug("Получен OPTIONS preflight запрос\r\n")
+                            # Proccesing preflight OPTIONS request for CORS
+                            store.mas_submod_utils.submod_log.debug("Got a OPTIONS preflight request\r\n")
                             response = (
                                 "HTTP/1.1 200 OK\r\n"
                                 "Access-Control-Allow-Origin: *\r\n"
@@ -145,44 +145,44 @@ init 6 python:
                             )
                             self.request.sendall(response)
                         else:
-                            store.mas_submod_utils.submod_log.debug("Неизвестный запрос: " + first_line + "\r\n")
+                            store.mas_submod_utils.submod_log.debug("Unknown request detected: " + first_line + "\r\n")
                             self.request.sendall("HTTP/1.1 404 Not Found\r\n\r\n")
                     else:
                         self.request.sendall("HTTP/1.1 400 Bad Request\r\n\r\n")
                 else:
-                    store.mas_submod_utils.submod_log.debug("Получены пустые данные\r\n")
+                    store.mas_submod_utils.submod_log.debug("Empty body\r\n")
 
             except Exception as e:
-                store.mas_submod_utils.submod_log.error("Ошибка в обработчике: " + str(e) + "\r\n")
+                store.mas_submod_utils.submod_log.error("General error in parser: " + str(e) + "\r\n")
 
     def start_server():
-        """Функция для запуска сервера в отдельном потоке"""
+        """Function for starting server in another thread"""
         try:
-            # Используем ThreadingTCPServer для обработки множественных подключений
+            # Using ThreadingTCPServer for processing multiple connections
             api_server = SocketServer.ThreadingTCPServer(("", PORT), MyRequestHandler)
 
-            # Разрешаем повторное использование адреса
+            # Allowing multiple uses of same address
             api_server.allow_reuse_address = True
 
-            store.mas_submod_utils.submod_log.debug("Сервер запущен на порту: " + str(PORT) + "\r\n")
+            store.mas_submod_utils.submod_log.debug("Server started on port: " + str(PORT) + "\r\n")
 
-            # Запускаем сервер
+            # Starting server
             api_server.serve_forever()
         except Exception as e:
-            store.mas_submod_utils.submod_log.error("Ошибка сервера: " + str(e) + "\r\n")
+            store.mas_submod_utils.submod_log.error("General server error: " + str(e) + "\r\n")
         finally:
-            store.mas_submod_utils.submod_log.debug("Сервер остановлен\r\n")
+            store.mas_submod_utils.submod_log.debug("Server stopped.\r\n")
 
-    # Создаем и запускаем поток с сервером
+    # Creating and staring a server thread
     server_thread = threading.Thread(target=start_server)
-    server_thread.daemon = True  # Демон-поток (завершится с основной программой)
+    server_thread.daemon = True  # Daemon mode (should shutdown gracefully with main thread, as i know)
     server_thread.start()
 
-    # Для проверки что поток запустился
-    store.mas_submod_utils.submod_log.debug("Сервер запущен в отдельном потоке\r\n")
+    # another log string, to check if the thread has started at all
+    #store.mas_submod_utils.submod_log.debug("Looks like a server thread start\r\n")
 
 init 5 python:
-    # GitHub
+    # ru wikipedia event
     addEvent(
         Event(
             persistent._mas_windowreacts_database,
@@ -199,7 +199,7 @@ init 5 python:
         code="WRS"
     )
 
-    # GitHub
+    # ru penterest event
     addEvent(
         Event(
             persistent._mas_windowreacts_database,
@@ -215,7 +215,7 @@ init 5 python:
         ),
         code="WRS"
     )
-    # GitHub
+    # telegram event
     addEvent(
         Event(
             persistent._mas_windowreacts_database,
@@ -232,20 +232,6 @@ init 5 python:
         code="WRS"
     )
 
-label fs_github:
-    $ fs_success = mas_display_notif(
-        m_name,
-        [
-            "Looking at code, [player]?",
-            "Working on a project?",
-            "Found something interesting on GitHub?"
-        ],
-        'Window Reactions'
-    )
-
-    if not fs_success:
-        $ mas_unlockFailedWRS('fs_github')
-    return
 
 label fs_ru_wikipedia:
     $ wikipedia_reacts = [
