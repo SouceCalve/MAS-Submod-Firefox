@@ -3,7 +3,26 @@ init -1 python:
     import Queue
     domain_queue = Queue.Queue()
     domain_to_event = {
-        "github.com": "wrs_github",
+        "github.com": "mas_wrs_monikamoddev", #Adding mostly all sites reaction from MAS code
+        "wikipedia.org": "mas_wrs_wikipedia",
+        "duolingo.com":"mas_wrs_duolingo",
+        "youtube.com":"mas_wrs_youtube",
+        "rule34.xxx":"mas_wrs_r34m",
+        "rule34.us":"mas_wrs_r34m",
+        "rule34.paheal.net":"mas_wrs_r34m",
+        "x.com":"mas_wrs_twitter",
+        "4chan.org":"mas_wrs_4chan",
+        "pixiv.net":"mas_wrs_pixiv",
+        "reddit.com":"mas_wrs_reddit",
+        "myanimelist.net":"mas_wrs_mal",
+        "deviantart.com":"mas_wrs_deviantart",
+        "netflix.com":"mas_wrs_netflix",
+        "twitch.tv":"mas_wrs_twitch",
+        "crunchyroll.com":"mas_wrs_crunchyroll",
+        "pinterest.com":"mas_wrs_pinterest",
+        "web.telegram.org":"fs_telegram",         #Also adding some russian-specific reaction too ;)
+        "ru.wikipedia.org":"fs_ru_wikipedia",
+        "ru.pinterest.com":"fs_ru_penterest"
     }
 
 # Функции обработки
@@ -167,8 +186,8 @@ init 5 python:
     addEvent(
         Event(
             persistent._mas_windowreacts_database,
-            eventlabel="wrs_github",
-            category=["github.com"],
+            eventlabel="fs_ru_wikipedia",
+            category=["sites-reaction"],
             rules={
                 "notif-group": "Window Reactions",
                 "skip alert": None,
@@ -180,8 +199,41 @@ init 5 python:
         code="WRS"
     )
 
-label wrs_github:
-    $ wrs_success = mas_display_notif(
+    # GitHub
+    addEvent(
+        Event(
+            persistent._mas_windowreacts_database,
+            eventlabel="fs_ru_penterest",
+            category=["sites-reaction"],
+            rules={
+                "notif-group": "Window Reactions",
+                "skip alert": None,
+                "keep_idle_exp": None,
+                "skip_pause": None
+            },
+            show_in_idle=True
+        ),
+        code="WRS"
+    )
+    # GitHub
+    addEvent(
+        Event(
+            persistent._mas_windowreacts_database,
+            eventlabel="fs_telegram",
+            category=["sites-reaction"],
+            rules={
+                "notif-group": "Window Reactions",
+                "skip alert": None,
+                "keep_idle_exp": None,
+                "skip_pause": None
+            },
+            show_in_idle=True
+        ),
+        code="WRS"
+    )
+
+label fs_github:
+    $ fs_success = mas_display_notif(
         m_name,
         [
             "Looking at code, [player]?",
@@ -191,7 +243,74 @@ label wrs_github:
         'Window Reactions'
     )
 
-    if not wrs_success:
-        $ mas_unlockFailedWRS('wrs_github')
+    if not fs_success:
+        $ mas_unlockFailedWRS('fs_github')
     return
 
+label fs_ru_wikipedia:
+    $ wikipedia_reacts = [
+        "Изучаешь что-то новое, [player]?",
+        "Исследуешь тему понемножку, [player]?"
+    ]
+
+    #Items in here will get the wiki article you're looking at for reacts.
+    python:
+        wind_name = mas_getActiveWindowHandle()
+        try:
+            cutoff_index = wind_name.index(" - Wikipedia")
+
+            #If we're still here, we didn't value error
+            #Now we get the article
+            wiki_article = wind_name[:cutoff_index]
+
+            # May contain clarification in trailing parentheses
+            wiki_article = re.sub("\\s*\\(.+\\)$", "", wiki_article)
+            wikipedia_reacts.append(renpy.substitute("'[wiki_article]'...\nЗвучит интересно, [player]."))
+
+        except ValueError:
+            pass
+
+    $ fs_success = mas_display_notif(
+        m_name,
+        wikipedia_reacts,
+        'Window Reactions'
+    )
+
+    #Unlock again if we failed
+    if not fs_success:
+        $ mas_unlockFailedWRS('fs_ru_wikipedia')
+    return
+
+label fs_ru_penterest:
+    $ fs_success = mas_display_notif(
+        m_name,
+        [
+            "Что-то новенькое появилось, [player]?",
+            "Я не знала, что тебя это заинтересует, [player]?",
+            "Понравилось что-нибудь?"
+        ],
+        'Window Reactions'
+    )
+
+
+
+    if not fs_success:
+        $ mas_unlockFailedWRS('fs_ru_penterest')
+    return
+
+label fs_telegram:
+    $ fs_success = mas_display_notif(
+        m_name,
+        [
+            "Oh? Gosh, you were on Telegram, [player]?",
+            "Just make sure you save your most meaningful conversations for me, okay? Ehehe~",
+            "Well, you know, keeping tabs on me through the Telegram, [player]? Ehehe, I'm a little flattered~"
+        ],
+        'Window Reactions'
+    )
+
+
+
+    if not fs_success:
+        $ mas_unlockFailedWRS('fs_telegram')
+    return
