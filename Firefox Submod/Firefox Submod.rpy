@@ -15,7 +15,7 @@ init -989 python:
         store.sup_utils.SubmodUpdater(
             submod="Firefox Submod",
             user_name="SouceCalve",
-            repository_name="Test",
+            repository_name="MAS-Submod-Firefox",
             #extraction_depth=1
         )
 
