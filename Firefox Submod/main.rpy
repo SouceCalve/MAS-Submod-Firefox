@@ -20,9 +20,7 @@ init -1 python:
         "twitch.tv":"mas_wrs_twitch",
         "crunchyroll.com":"mas_wrs_crunchyroll",
         "pinterest.com":"mas_wrs_pinterest",
-        "web.telegram.org":"fs_telegram",         #Also adding some russian-specific reaction too ;)
-        "ru.wikipedia.org":"fs_ru_wikipedia",
-        "ru.pinterest.com":"fs_ru_penterest"
+        "web.telegram.org":"fs_telegram"
     }
 
 # Функции обработки
@@ -182,107 +180,6 @@ init 6 python:
     #store.mas_submod_utils.submod_log.debug("Looks like a server thread start\r\n")
 
 init 5 python:
-    # ru wikipedia event
-    addEvent(
-        Event(
-            persistent._mas_windowreacts_database,
-            eventlabel="fs_ru_wikipedia",
-            category=["sites-reaction"],
-            rules={
-                "notif-group": "Window Reactions",
-                "skip alert": None,
-                "keep_idle_exp": None,
-                "skip_pause": None
-            },
-            show_in_idle=True
-        ),
-        code="WRS"
-    )
-
-    # ru penterest event
-    addEvent(
-        Event(
-            persistent._mas_windowreacts_database,
-            eventlabel="fs_ru_penterest",
-            category=["sites-reaction"],
-            rules={
-                "notif-group": "Window Reactions",
-                "skip alert": None,
-                "keep_idle_exp": None,
-                "skip_pause": None
-            },
-            show_in_idle=True
-        ),
-        code="WRS"
-    )
-    # telegram event
-    addEvent(
-        Event(
-            persistent._mas_windowreacts_database,
-            eventlabel="fs_telegram",
-            category=["sites-reaction"],
-            rules={
-                "notif-group": "Window Reactions",
-                "skip alert": None,
-                "keep_idle_exp": None,
-                "skip_pause": None
-            },
-            show_in_idle=True
-        ),
-        code="WRS"
-    )
-
-
-label fs_ru_wikipedia:
-    $ wikipedia_reacts = [
-        "Изучаешь что-то новое, [player]?",
-        "Исследуешь тему понемножку, [player]?"
-    ]
-
-    #Items in here will get the wiki article you're looking at for reacts.
-    python:
-        wind_name = mas_getActiveWindowHandle()
-        try:
-            cutoff_index = wind_name.index(" - Wikipedia")
-
-            #If we're still here, we didn't value error
-            #Now we get the article
-            wiki_article = wind_name[:cutoff_index]
-
-            # May contain clarification in trailing parentheses
-            wiki_article = re.sub("\\s*\\(.+\\)$", "", wiki_article)
-            wikipedia_reacts.append(renpy.substitute("'[wiki_article]'...\nЗвучит интересно, [player]."))
-
-        except ValueError:
-            pass
-
-    $ fs_success = mas_display_notif(
-        m_name,
-        wikipedia_reacts,
-        'Window Reactions'
-    )
-
-    #Unlock again if we failed
-    if not fs_success:
-        $ mas_unlockFailedWRS('fs_ru_wikipedia')
-    return
-
-label fs_ru_penterest:
-    $ fs_success = mas_display_notif(
-        m_name,
-        [
-            "Что-то новенькое появилось, [player]?",
-            "Я не знала, что тебя это заинтересует, [player]?",
-            "Понравилось что-нибудь?"
-        ],
-        'Window Reactions'
-    )
-
-
-
-    if not fs_success:
-        $ mas_unlockFailedWRS('fs_ru_penterest')
-    return
 
 label fs_telegram:
     $ fs_success = mas_display_notif(
