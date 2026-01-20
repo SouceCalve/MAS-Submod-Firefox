@@ -8,4 +8,4 @@
 ## TODO
 - [x] Fix by moving reaction selector to main thread 
 - [x] Upload firefox plugin
-- [ ] Upload the plugin to AMO and get verification
+- [x] Upload the plugin to AMO and get verification
