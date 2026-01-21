@@ -26,7 +26,7 @@ init -1 python:
 # Функции обработки
 init 0 python:
     import store
-    @mas_submod_utils.functionplugin("ch30_loop")
+    @mas_submod_utils.functionplugin("ch30_minute")
     def check_domain_queue():
         """
         Main processing function (hooked to ch30_loop)
@@ -35,8 +35,11 @@ init 0 python:
         try:
             # Securely checking queue without blocking
             if not domain_queue.empty():
+                if domain_queue.qsize()>1:
+                    store.mas_submod_utils.submod_log.debug("Hey-hey-hey! Slow down! I cant keep up! - queue collected more than 1 domain")
+                    while(domain_queue.qsize()>1):
+                        domain_queue.get_nowait()
                 domain = domain_queue.get_nowait()
-
                 # Domain logging disabled right now, but you can still enable it to debug queue
                 # store.mas_submod_utils.submod_log.debug(f"Proccesing domain: {domain}")
 
@@ -105,8 +108,6 @@ init 6 python:
                                     data_json = json.loads(body)
                                     domain = data_json.get('domain', '')
                                     store.mas_submod_utils.submod_log.debug("Extracted domain: " + domain + "\r\n")
-                                    if not(store.persistent.domain_now == domain):
-                                        store.persistent.domain_now = domain
 
                                     # Forming a HTTP answer with CORS headers
                                     response_data = json.dumps({"status": "ok", "domain": domain})
@@ -180,6 +181,23 @@ init 6 python:
     #store.mas_submod_utils.submod_log.debug("Looks like a server thread start\r\n")
 
 init 5 python:
+
+    # telegram event
+    addEvent(
+        Event(
+            persistent._mas_windowreacts_database,
+            eventlabel="fs_telegram",
+            category=["sites-reaction"],
+            rules={
+                "notif-group": "Window Reactions",
+                "skip alert": None,
+                "keep_idle_exp": None,
+                "skip_pause": None
+            },
+            show_in_idle=True
+        ),
+        code="WRS"
+    )
 
 label fs_telegram:
     $ fs_success = mas_display_notif(
